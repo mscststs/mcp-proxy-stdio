@@ -1,10 +1,14 @@
 import readline from "readline";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 
-// 配置服务器URL
-const SSE_URL = "http://localhost:57441/sse";
 
-
+function isJSONRPCMessage(message) {
+  return (
+    typeof message === "object" &&
+    message !== null &&
+    "jsonrpc" in message
+  );
+}
 
 export async function CreateSSEProxy(SSE_URL) {
   // Validate SSE URL
@@ -19,9 +23,10 @@ export async function CreateSSEProxy(SSE_URL) {
 
   transport.onmessage = (event) => {
     try {
+      if(!isJSONRPCMessage(event)) {
+        throw new Error("Invalid JSON-RPC message");
+      }
       const data = JSON.stringify(event);
-
-      // If the event is a regular message, output directly
       process.stdout.write(data + "\n");
     } catch (error) {
       console.error("Error parsing message:", error);
@@ -41,9 +46,13 @@ export async function CreateSSEProxy(SSE_URL) {
   });
 
   // Listen for stdin input and submit it to the server
-  rl.on("line", (line) => {
+  rl.on("line", async (line) => {
     try {
-      transport.send(JSON.parse(line));
+      const message = JSON.parse(line);
+      if(!isJSONRPCMessage(message)) {
+        throw new Error("Invalid JSON-RPC message");
+      }
+      await transport.send(message);
     } catch (e) {
       console.error("Error parsing input:", e);
     }
