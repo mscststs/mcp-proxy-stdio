@@ -1,16 +1,42 @@
-import readline from "readline";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+
+import fs from "fs/promises";
 
 
-function isJSONRPCMessage(message) {
-  return (
-    typeof message === "object" &&
-    message !== null &&
-    "jsonrpc" in message
-  );
+async function getLogFile(log = ""){
+  let logFile = null;
+  if (log) {
+    try {
+      const stats = await fs.stat(log);
+      if (stats.isDirectory()) {
+        logFile = `${log}/proxy.log`;
+      } else {
+        logFile = log;
+      }
+    } catch (error) {
+      // If path doesn't exist, create the file
+      if (error.code === 'ENOENT') {
+        if (log.endsWith('/') || log.endsWith('\\')) {
+          await fs.mkdir(log, { recursive: true });
+          logFile = `${log}/proxy.log`;
+        } else {
+          const dir = log.substring(0, log.lastIndexOf('/'));
+          if (dir) {
+            await fs.mkdir(dir, { recursive: true });
+          }
+          logFile = log;
+        }
+        await fs.writeFile(logFile, ''); // Create empty file
+      } else {
+        throw error;
+      }
+    }
+  }
+  return logFile;
 }
 
-export async function CreateSSEProxy(SSE_URL) {
+export async function CreateSSEProxy(SSE_URL, log = "") {
   // Validate SSE URL
   let endpoint = null;
   try {
@@ -19,42 +45,39 @@ export async function CreateSSEProxy(SSE_URL) {
     throw new Error(`Invalid SSE URL: ${SSE_URL}`);
   }
 
-  const transport = new SSEClientTransport(endpoint);
+  let logFile = await getLogFile(log);
 
-  transport.onmessage = (event) => {
+  const transport = new SSEClientTransport(endpoint);
+  const stdioTransport = new StdioServerTransport();
+
+
+  transport.onmessage = async (message) => {
     try {
-      if(!isJSONRPCMessage(event)) {
-        throw new Error("Invalid JSON-RPC message");
+      // Log the message to the file
+      if(logFile) {
+        await fs.appendFile(logFile, JSON.stringify(message) + '\n');
       }
-      const data = JSON.stringify(event);
-      process.stdout.write(data + "\n");
+
+      await stdioTransport.send(message);
     } catch (error) {
       console.error("Error parsing message:", error);
     }
   };
-  await transport.start();
 
-  transport.onerror = (error) => {
-    console.error("SSE connection error:", error);
+  stdioTransport.onmessage = async (message) => {
+    try {
+      // Log the message to the file
+      if(logFile) {
+        await fs.appendFile(logFile, JSON.stringify(message) + '\n');
+      }
+
+      await transport.send(message);
+    } catch (error) {
+      console.error("Error parsing message:", error);
+    }
   };
 
-  // 创建 readline 接口监听 stdin 的数据
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false,
-  });
+  await transport.start();
+  await stdioTransport.start();
 
-  // Listen for stdin input and submit it to the server
-  rl.on("line", async (line) => {
-    try {
-      const message = JSON.parse(line);
-      if(!isJSONRPCMessage(message)) {
-        throw new Error("Invalid JSON-RPC message");
-      }
-      await transport.send(message);
-    } catch (e) {
-      console.error("Error parsing input:", e);
-    }
-  });
 }

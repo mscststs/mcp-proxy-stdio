@@ -6,7 +6,7 @@ import { setTimeout } from "node:timers";
 import { CreateSSEProxy } from "../index.js";
 
 const argv = await yargs(hideBin(process.argv))
-  .scriptName("sse-proxy")
+  .scriptName("mcp-proxy")
   .command("$0 <sseurl>", "Start SSE Proxy", (yargs) => {
     yargs.positional("sseurl", {
       type: "string",
@@ -14,14 +14,21 @@ const argv = await yargs(hideBin(process.argv))
       demandOption: true,
     });
   })
+  .options({
+    log: {
+      type: "string",
+      describe: "Path to the log file",
+      default: "",
+    },
+  })
   .help()
   .parseAsync();
 
 const proxy = async () => {
-  const { sseurl } = argv;
+  const { sseurl, log } = argv;
 
   try {
-    const proxy = await CreateSSEProxy(sseurl);
+    const proxy = await CreateSSEProxy(sseurl, log);
 
     return proxy;
   } catch (error) {

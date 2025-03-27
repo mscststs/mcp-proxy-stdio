@@ -32,3 +32,20 @@ Use In McpConfig
   }
 }
 ```
+
+## debug
+
+# Log File Option
+
+Use `--log ./temp.txt` to specify a log file for debug purposes. This allows you to:
+
+- Save program output to a file instead of console
+- Review execution details later for debugging
+- Set custom log file path and name
+- Capture log messages during program execution
+
+Example:
+
+```bash
+npx mcp-proxy-stdio http://localhost:3000/sse --log ./debug.log
+```
