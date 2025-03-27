@@ -1,0 +1,20 @@
+{
+  "name": "mcp-proxy-stdio",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "bin": {
+    "mcp-proxy-stdio": "src/bin/mcp-proxy.js"
+  },
+  "files": [
+    "build"
+  ],
+  "type": "module",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.7.0",
+    "yargs": "^17.7.2"
+  }
+}

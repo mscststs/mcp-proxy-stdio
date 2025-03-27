@@ -1,0 +1,43 @@
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# Compiled files
+/target/
+/build/
+*.class
+*.jar
+*.war
+*.ear
+
+# Logs
+*.log
+logs/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Dependencies
+/node_modules/
+/dist/
+/.gradle/
+
+# Environment files
+.env
+.env.local
+*.properties
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
